@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
 """
-Aero TUI Shell base implementation (Textual + tmux)
-
-Features:
-- First-run Setup UI: username, password, time format (12/24), and network interface nicknames.
-- Persist settings and credentials to SQLite DB installed by Installer.sh.
-- Home screen integrates with tmux: creates/attaches a tmux session named 'aero_home'.
-- tmux status bar branding: shows "Aero" + battery (if present), time, and network summary.
-- App menu popup for executables in /opt/aero_apps.
-- Keystrokes: Ctrl+A (apps), Ctrl+= (tile right), Ctrl+- (tile left), Ctrl+Arrow (move selected), Ctrl+D (close tile).
-- Installer.sh installs everything in /usr/local/share/aero_shell and sets up /usr/local/bin/aero launcher.
+Aero TUI Shell base implementation (Textual + tmux) updated for Textual 6+ (ModalScreen support)
 """
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Header, Footer, Static, Button, Input, Label, ListView, ListItem, Modal
-from textual.screen import Screen
+from textual.widgets import Header, Footer, Static, Button, Input, Label, ListView, ListItem
+from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
 import sqlite3
 import subprocess
@@ -104,7 +95,6 @@ def ensure_tmux_session(session=TMUX_SESSION):
 
 
 def tmux_set_status(time_format_24=True, nic_summary=""):
-    # Build Aero-branded status bar
     right = 'Aero | Battery: #(cat /sys/class/power_supply/BAT*/capacity 2>/dev/null || echo N/A) ' \
             + '| %Y-%m-%d ' \
             + ('%H:%M' if time_format_24 else '%I:%M %p')
@@ -134,6 +124,20 @@ def detect_network_interfaces():
     except Exception:
         pass
     return res
+
+
+# --- Textual Modals ---
+class MessageModal(ModalScreen):
+    def __init__(self, message: str):
+        super().__init__()
+        self.message = message
+
+    def compose(self) -> ComposeResult:
+        yield Static(self.message)
+        yield Button("OK", id="ok")
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        await self.app.pop_screen()
 
 
 class SetupScreen(Screen):
@@ -184,19 +188,6 @@ class SetupScreen(Screen):
             ensure_tmux_session()
             tmux_set_status(time_format_24=self.time_24)
             await self.app.switch_screen("home")
-
-
-class MessageModal(Modal):
-    def __init__(self, message: str):
-        super().__init__()
-        self.message = message
-
-    def compose(self) -> ComposeResult:
-        yield Static(self.message)
-        yield Button("OK", id="ok")
-
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        await self.app.pop_screen()
 
 
 class Tile(Static):
@@ -300,33 +291,3 @@ class AppPickerScreen(Screen):
         yield Footer()
 
     async def on_list_view_selected(self, event: ListView.Selected) -> None:
-        label = event.item.query_one(Label)
-        app_path = label.renderable
-        self.home.run_app_in_selected_tile(app_path)
-        await self.app.pop_screen()
-
-    def action_pop(self) -> None:
-        self.app.pop_screen()
-
-
-class AeroApp(App):
-    def on_mount(self) -> None:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT username FROM users WHERE id=1")
-        row = c.fetchone()
-        conn.close()
-        if row:
-            self.push_screen("home")
-        else:
-            self.push_screen("setup")
-
-    def compose(self) -> ComposeResult:
-        yield
-
-
-if __name__ == "__main__":
-    app = AeroApp()
-    app.register_screen("setup", SetupScreen())
-    app.register_screen("home", HomeScreen())
-    app.run()
