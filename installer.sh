@@ -5,6 +5,11 @@
 set -e
 
 echo "=== AeroTUI Installer ==="
+echo "Written by Nebuff"
+sleep 1
+echo "[!] YOU MUST HAVE A INTERNET CONNECTION AND SUDOERS/ROOT PRIVLEDGES"
+sleep 3
+echo "[!] Proceeding with Install"
 
 # 1. Update and install dependencies
 echo "[+] Installing dependencies..."
