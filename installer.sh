@@ -5,6 +5,7 @@
 set -e
 
 echo "=== AeroTUI Installer ==="
+echo "v1.2 Alpha"
 echo "Written by Nebuff"
 sleep 1
 echo "[!] YOU MUST HAVE A INTERNET CONNECTION AND SUDOERS/ROOT PRIVLEDGES"
