@@ -1,10 +1,10 @@
 #!/bin/bash
-# Aero Installer Script
-# This will set up the Aero TUI Shell environment on a minimal Linux install
+# AeroTUI Installer
+# Usage: curl -fsSL https://raw.githubusercontent.com/nebuff/AeroTUI/main/installer.sh | bash
 
 set -e
 
-echo "=== Aero Installer ==="
+echo "=== AeroTUI Installer ==="
 
 # 1. Update and install dependencies
 echo "[+] Installing dependencies..."
@@ -16,7 +16,7 @@ elif command -v dnf >/dev/null 2>&1; then
 elif command -v pacman >/dev/null 2>&1; then
     sudo pacman -Sy --noconfirm python python-pip sqlite tmux git
 else
-    echo "Unsupported package manager. Install python3, pip, sqlite3, and tmux manually."
+    echo "Unsupported package manager. Please install python3, pip, sqlite3, and tmux manually."
     exit 1
 fi
 
@@ -31,24 +31,21 @@ sudo mkdir -p /var/lib/aero_shell
 sudo mkdir -p /opt/aero_apps
 sudo chmod -R 755 /var/lib/aero_shell /opt/aero_apps
 
-# 4. Place main Aero script
-echo "[+] Installing Aero TUI Shell..."
-SCRIPT_PATH="/usr/local/bin/aero"
-sudo tee $SCRIPT_PATH >/dev/null <<'EOF'
+# 4. Copy project code
+echo "[+] Installing AeroTUI base..."
+sudo mkdir -p /usr/local/share/aero_shell
+curl -fsSL https://raw.githubusercontent.com/nebuff/AeroTUI/main/base.py -o /tmp/aero_base.py
+sudo cp /tmp/aero_base.py /usr/local/share/aero_shell/aero.py
+
+# 5. Create launcher command
+echo "[+] Creating launcher..."
+sudo tee /usr/local/bin/aero >/dev/null <<'EOF'
 #!/bin/bash
-# Launcher for Aero TUI Shell
 exec python3 /usr/local/share/aero_shell/aero.py "$@"
 EOF
+sudo chmod +x /usr/local/bin/aero
 
-sudo chmod +x $SCRIPT_PATH
-
-# 5. Copy project code
-echo "[+] Copying Aero sources..."
-sudo mkdir -p /usr/local/share/aero_shell
-# Expect aero.py to be in current directory
-sudo cp textual_tui_shell_base.py /usr/local/share/aero_shell/aero.py
-
-# 6. Setup tmux default branding for Aero
+# 6. Configure tmux branding
 echo "[+] Configuring tmux branding..."
 sudo tee /etc/tmux.conf >/dev/null <<'EOF'
 # Aero TUI Shell tmux config
