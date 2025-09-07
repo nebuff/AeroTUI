@@ -20,10 +20,10 @@ else
     exit 1
 fi
 
-# 2. Install Python deps
+# 2. Install Python deps (force break-system-packages for Debian/Ubuntu)
 echo "[+] Installing Python libraries..."
-pip3 install --upgrade pip
-pip3 install textual rich
+pip3 install --upgrade pip --break-system-packages
+pip3 install textual rich --break-system-packages
 
 # 3. Create Aero system dirs
 echo "[+] Creating Aero directories..."
