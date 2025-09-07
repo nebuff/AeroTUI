@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Aero TUI Shell base implementation (Textual + tmux) updated for Textual 6+ (ModalScreen support)
+Aero TUI Shell base implementation (Textual + tmux)
+Fully patched for Textual 6+ with ModalScreen, correct indentation, and spaces only (no tabs)
 """
 
 from textual.app import App, ComposeResult
@@ -70,7 +71,6 @@ def init_db(path=DB_PATH):
 
 init_db()
 
-
 # --- tmux helpers ---
 def tmux_available():
     return shutil.which("tmux") is not None
@@ -124,7 +124,6 @@ def detect_network_interfaces():
     except Exception:
         pass
     return res
-
 
 # --- Textual Modals ---
 class MessageModal(ModalScreen):
@@ -291,3 +290,33 @@ class AppPickerScreen(Screen):
         yield Footer()
 
     async def on_list_view_selected(self, event: ListView.Selected) -> None:
+        label = event.item.query_one(Label)
+        app_path = label.renderable
+        self.home.run_app_in_selected_tile(app_path)
+        await self.app.pop_screen()
+
+    def action_pop(self) -> None:
+        self.app.pop_screen()
+
+
+class AeroApp(App):
+    def on_mount(self) -> None:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT username FROM users WHERE id=1")
+        row = c.fetchone()
+        conn.close()
+        if row:
+            self.push_screen("home")
+        else:
+            self.push_screen("setup")
+
+    def compose(self) -> ComposeResult:
+        yield
+
+
+if __name__ == "__main__":
+    app = AeroApp()
+    app.register_screen("setup", SetupScreen())
+    app.register_screen("home", HomeScreen())
+    app.run()
